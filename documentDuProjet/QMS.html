@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QMS Mobile - Système de Gestion Qualité</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .phone-frame {
+            width: 375px;
+            height: 812px;
+            background: linear-gradient(145deg, #1f1f1f, #333);
+            border-radius: 40px;
+            padding: 8px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5), 
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            position: relative;
+            margin: 20px auto;
+        }
+        
+        .phone-screen {
+            width: 100%;
+            height: 100%;
+            background: #ffffff;
+            border-radius: 32px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .phone-notch {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 150px;
+            height: 30px;
+            background: #000;
+            border-radius: 0 0 15px 15px;
+            z-index: 1000;
+        }
+        
+        .app-container {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            padding-top: 30px;
+        }
+        
+        .screen {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+        }
+        
+        .screen.active {
+            display: flex;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #2196F3, #1976D2);
+            color: white;
+            padding: 20px 16px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+        
+        .bottom-nav {
+            background: white;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            height: 70px;
+            box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            background: none;
+        }
+        
+        .nav-item.active {
+            color: #2196F3;
+            background: rgba(33, 150, 243, 0.1);
+        }
+        
+        .nav-item i {
+            font-size: 20px;
+            margin-bottom: 4px;
+        }
+        
+        .nav-item span {
+            font-size: 10px;
+            font-weight: 500;
+        }
+        
+        .menu-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-top: 24px;
+        }
+        
+        .menu-item {
+            background: white;
+            border-radius: 12px;
+            padding: 24px 16px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: none;
+        }
+        
+        .menu-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        }
+        
+        .menu-item i {
+            font-size: 32px;
+            color: #2196F3;
+            margin-bottom: 12px;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: #2196F3;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #1976D2;
+        }
+        
+        .btn-success {
+            background: #4CAF50;
+            color: white;
+        }
+        
+        .btn-danger {
+            background: #f44336;
+            color: white;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .input-group {
+            margin-bottom: 16px;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 4px;
+            font-weight: 500;
+            color: #333;
+        }
+        
+        .input-group input,
+        .input-group select,
+        .input-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .status-open {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-closed {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-planned {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        
+        .offline-banner {
+            background: #f44336;
+            color: white;
+            padding: 8px 16px;
+            text-align: center;
+            font-size: 14px;
+            display: none;
+        }
+        
+        .chart-container {
+            height: 300px;
+            margin: 16px 0;
+        }
+        
+        .file-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+        }
+        
+        .file-item:hover {
+            background: #f5f5f5;
+        }
+        
+        .file-actions {
+            display: flex;
+            gap: 8px;
+            margin-left: auto;
+        }
+        
+        .action-btn {
+            padding: 8px;
+            border: none;
+            background: #f0f0f0;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        
+        .action-btn:hover {
+            background: #e0e0e0;
+        }
+        
+        .signature-pad {
+            border: 2px dashed #ddd;
+            height: 150px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 16px 0;
+            background: #f9f9f9;
+        }
+        
+        .signed {
+            background: #e8f5e8;
+            border-color: #4CAF50;
+            color: #2e7d32;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .signing {
+            animation: pulse 2s infinite;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="phone-frame">
+        <div class="phone-notch"></div>
+        <div class="phone-screen">
+            <div class="offline-banner" id="offlineBanner">
+                <i class="fas fa-wifi"></i> Mode hors ligne - Données non synchronisées
+            </div>
+            
+            <div class="app-container">
+
+                <div id="loginScreen" class="screen active">
+                    <div class="header">
+                        <h1 class="text-xl font-bold">QMS Mobile</h1>
+                        <p class="text-sm opacity-90">Système de Gestion Qualité</p>
+                    </div>
+                    <div class="content flex items-center justify-center">
+                        <div class="w-full max-w-sm">
+                            <div class="text-center mb-8">
+                                <i class="fas fa-shield-alt text-6xl text-blue-500 mb-4"></i>
+                                <h2 class="text-2xl font-bold text-gray-800">Authentification</h2>
+                            </div>
+                            <div class="input-group">
+                                <label>Nom d'utilisateur</label>
+                                <input type="text" id="username" value="admin" placeholder="Entrez votre nom d'utilisateur">
+                            </div>
+                            <div class="input-group">
+                                <label>Mot de passe</label>
+                                <input type="password" id="password" value="password" placeholder="Entrez votre mot de passe">
+                            </div>
+                            <div class="input-group">
+                                <label>Rôle</label>
+                                <select id="userRole">
+                                    <option value="admin">Administrateur</option>
+                                    <option value="operator">Opérateur</option>
+                                </select>
+                            </div>
+                            <button class="btn btn-primary w-full" onclick="login()">
+                                <i class="fas fa-sign-in-alt"></i>
+                                Se connecter
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            
+                <div id="homeScreen" class="screen">
+                    <div class="header">
+                        <h1 class="text-xl font-bold">QMS Mobile</h1>
+                        <p class="text-sm opacity-90">Bonjour, <span id="currentUser">Admin</span></p>
+                    </div>
+                    <div class="content">
+                        <div class="menu-grid">
+                            <button class="menu-item" onclick="showScreen('documentsScreen')">
+                                <i class="fas fa-folder"></i>
+                                <h3 class="font-semibold">Gestion documentaire</h3>
+                            </button>
+                            <button class="menu-item" onclick="showScreen('nonConformityScreen')">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <h3 class="font-semibold">Non-conformités</h3>
+                            </button>
+                            <button class="menu-item" onclick="showScreen('auditsScreen')">
+                                <i class="fas fa-clipboard-check"></i>
+                                <h3 class="font-semibold">Audits</h3>
+                            </button>
+                            <button class="menu-item" onclick="showScreen('safetyScreen')">
+                                <i class="fas fa-hard-hat"></i>
+                                <h3 class="font-semibold">Fiches de sécurité</h3>
+                            </button>
+                            <button class="menu-item" onclick="showScreen('kpiScreen')">
+                                <i class="fas fa-chart-bar"></i>
+                                <h3 class="font-semibold">Indicateurs</h3>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Écran Gestion documentaire -->
+                <div id="documentsScreen" class="screen">
+                    <div class="header">
+                        <h1 class="text-lg font-bold">Gestion documentaire</h1>
+                    </div>
+                    <div class="content">
+                        <div class="card">
+                            <h3 class="font-semibold mb-4">Arborescence des documents</h3>
+                            <div class="file-item" onclick="toggleFolder(this)">
+                                <i class="fas fa-folder text-yellow-500 mr-3"></i>
+                                <span>Procédures Qualité</span>
+                                <i class="fas fa-chevron-right ml-auto"></i>
+                            </div>
+                            <div class="pl-6" style="display: none;">
+                                <div class="file-item">
+                                    <i class="fas fa-file-pdf text-red-500 mr-3"></i>
+                                    <span>PROC-001-Contrôle qualité.pdf</span>
+                                    <div class="file-actions">
+                                        <button class="action-btn" onclick="showToast('Ouverture du document...')">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button class="action-btn" onclick="showToast('Téléchargement en cours...')">
+                                            <i class="fas fa-download"></i>
+                                        </button>
+                                        <button class="action-btn" onclick="showToast('Modification en cours...')">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="action-btn" onclick="showToast('Partage en cours...')">
+                                            <i class="fas fa-share"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="file-item" onclick="toggleFolder(this)">
+                                <i class="fas fa-folder text-yellow-500 mr-3"></i>
+                                <span>Instructions de travail</span>
+                                <i class="fas fa-chevron-right ml-auto"></i>
+                            </div>
+                            <div class="pl-6" style="display: none;">
+                                <div class="file-item">
+                                    <i class="fas fa-file-word text-blue-500 mr-3"></i>
+                                    <span>IT-015-Montage ligne A.docx</span>
+                                    <div class="file-actions">
+                                        <button class="action-btn" onclick="showToast('Ouverture du document...')">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button class="action-btn" onclick="showToast('Téléchargement en cours...')">
+                                            <i class="fas fa-download"></i>
+                                        </button>
+                                        <button class="action-btn" onclick="showToast('Modification en cours...')">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                
+                <div id="nonConformityScreen" class="screen">
+                    <div class="header">
+                        <h1 class="text-lg font-bold">Non-conformités</h1>
+                    </div>
+                    <div class="content">
+                        <div class="flex gap-2 mb-4">
+                            <button class="btn btn-primary flex-1" onclick="showNCForm()">
+                                <i class="fas fa-plus"></i>
+                                Nouvelle NC
+                            </button>
+                            <button class="btn" style="background: #f0f0f0;" onclick="showNCList()">
+                                <i class="fas fa-list"></i>
+                                Liste
+                            </button>
+                        </div>
+
+                        <div id="ncForm" class="card">
+                            <h3 class="font-semibold mb-4">Déclaration de non-conformité</h3>
+                            <div class="input-group">
+                                <label>Type de non-conformité</label>
+                                <select>
+                                    <option>Défaut produit</option>
+                                    <option>Non-respect procédure</option>
+                                    <option>Problème équipement</option>
+                                    <option>Formation insuffisante</option>
+                                </select>
+                            </div>
+                            <div class="input-group">
+                                <label>Description</label>
+                                <textarea rows="3" placeholder="Décrivez la non-conformité observée..."></textarea>
+                            </div>
+                            <div class="input-group">
+                                <label>Photo (optionnel)</label>
+                                <button class="btn" style="background: #f0f0f0; width: 100%;" onclick="showToast('Ouverture de l\'appareil photo...')">
+                                    <i class="fas fa-camera"></i>
+                                    Prendre une photo
+                                </button>
+                            </div>
+                            <div class="input-group">
+                                <label>Responsable</label>
+                                <select>
+                                    <option>Jean Dubois</option>
+                                    <option>Marie Martin</option>
+                                    <option>Pierre Durand</option>
+                                </select>
+                            </div>
+                            <button class="btn btn-primary w-full" onclick="submitNC()">
+                                <i class="fas fa-check"></i>
+                                Enregistrer la NC
+                            </button>
+                        </div>
+
+                        <div id="ncList">
+                            <div class="card">
+                                <div class="flex justify-between items-start mb-2">
+                                    <div>
+                                        <h4 class="font-semibold">NC-2024-001</h4>
+                                        <p class="text-sm text-gray-600">Défaut soudure ligne 2</p>
+                                    </div>
+                                    <span class="status-badge status-open">En cours</span>
+                                </div>
+                                <p class="text-sm text-gray-500">Responsable: Jean Dubois - 15/01/2024</p>
+                            </div>
+                            
+                            <div class="card">
+                                <div class="flex justify-between items-start mb-2">
+                                    <div>
+                                        <h4 class="font-semibold">NC-2024-002</h4>
+                                        <p class="text-sm text-gray-600">Non-respect EPI</p>
+                                    </div>
+                                    <span class="status-badge status-closed">Clos</span>
+                                </div>
+                                <p class="text-sm text-gray-500">Responsable: Marie Martin - 12/01/2024</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+    
+                <div id="auditsScreen" class="screen">
+                    <div class="header">
+                        <h1 class="text-lg font-bold">Audits</h1>
+                    </div>
+                    <div class="content">
+                        <div class="card">
+                            <h3 class="font-semibold mb-4">Audits planifiés</h3>
+                            <div class="space-y-3">
+                                <div class="border-l-4 border-blue-500 pl-4">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <h4 class="font-semibold">Audit ISO 9001</h4>
+                                            <p class="text-sm text-gray-600">Site principal - Zone production</p>
+                                            <p class="text-sm text-gray-500">25/01/2024 - 14h00</p>
+                                        </div>
+                                        <span class="status-badge status-planned">Planifié</span>
+                                    </div>
+                                    <div class="mt-2 flex gap-2">
+                                        <button class="btn btn-primary text-sm" onclick="startAudit()">
+                                            <i class="fas fa-play"></i>
+                                            Démarrer
+                                        </button>
+                                        <button class="btn text-sm" style="background: #f0f0f0;" onclick="showToast('Checklist affichée')">
+                                            <i class="fas fa-list-check"></i>
+                                            Checklist
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="border-l-4 border-green-500 pl-4">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <h4 class="font-semibold">Audit 5S</h4>
+                                            <p class="text-sm text-gray-600">Atelier maintenance</p>
+                                            <p class="text-sm text-gray-500">20/01/2024 - 10h00</p>
+                                        </div>
+                                        <span class="status-badge status-closed">Terminé</span>
+                                    </div>
+                                    <div class="mt-2">
+                                        <button class="btn btn-success text-sm" onclick="showToast('Génération du rapport PDF...')">
+                                            <i class="fas fa-file-pdf"></i>
+                                            Rapport PDF
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                
+                <div id="safetyScreen" class="screen">
+                    <div class="header">
+                        <h1 class="text-lg font-bold">Fiches de sécurité</h1>
+                    </div>
+                    <div class="content">
+                        <div class="card">
+                            <h3 class="font-semibold mb-4">Poste: Ligne de production A</h3>
+                            
+                            <div class="mb-6">
+                                <h4 class="font-semibold text-red-600 mb-2">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    Dangers identifiés
+                                </h4>
+                                <ul class="list-disc list-inside text-sm space-y-1">
+                                    <li>Risque de coupure (lames de découpe)</li>
+                                    <li>Bruit > 85 dB(A)</li>
+                                    <li>Projection de particules</li>
+                                    <li>Risque d'écrasement</li>
+                                </ul>
+                            </div>
+
+                            <div class="mb-6">
+                                <h4 class="font-semibold text-blue-600 mb-2">
+                                    <i class="fas fa-shield-alt"></i>
+                                    EPI obligatoires
+                                </h4>
+                                <div class="grid grid-cols-2 gap-2 text-sm">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-hard-hat text-yellow-500 mr-2"></i>
+                                        Casque de sécurité
+                                    </div>
+                                    <div class="flex items-center">
+                                        <i class="fas fa-eye text-gray-600 mr-2"></i>
+                                        Lunettes de protection
+                                    </div>
+                                    <div class="flex items-center">
+                                        <i class="fas fa-hand-paper text-blue-500 mr-2"></i>
+                                        Gants anti-coupure
+                                    </div>
+                                    <div class="flex items-center">
+                                        <i class="fas fa-shoe-prints text-brown-600 mr-2"></i>
+                                        Chaussures de sécurité
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="signature-pad" id="signaturePad">
+                                <p class="text-gray-500">Cliquez pour signer la prise de connaissance</p>
+                            </div>
+
+                            <button class="btn btn-success w-full" onclick="signSafetySheet()" id="signBtn">
+                                <i class="fas fa-signature"></i>
+                                Signer la fiche
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            
+                <div id="kpiScreen" class="screen">
+                    <div class="header">
+                        <h1 class="text-lg font-bold">Indicateurs KPI</h1>
+                    </div>
+                    <div class="content">
+                        <div class="grid grid-cols-2 gap-4 mb-6">
+                            <div class="card text-center">
+                                <div class="text-2xl font-bold text-red-500">12</div>
+                                <div class="text-sm text-gray-600">NC ouvertes</div>
+                            </div>
+                            <div class="card text-center">
+                                <div class="text-2xl font-bold text-green-500">89%</div>
+                                <div class="text-sm text-gray-600">Actions réalisées</div>
+                            </div>
+                            <div class="card text-center">
+                                <div class="text-2xl font-bold text-blue-500">24</div>
+                                <div class="text-sm text-gray-600">Audits réalisés</div>
+                            </div>
+                            <div class="card text-center">
+                                <div class="text-2xl font-bold text-purple-500">96%</div>
+                                <div class="text-sm text-gray-600">Conformité</div>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <h3 class="font-semibold mb-4">Évolution des non-conformités</h3>
+                            <div class="chart-container">
+                                <canvas id="ncChart"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <h3 class="font-semibold mb-4">Actions</h3>
+                            <div class="flex gap-2">
+                                <button class="btn btn-primary flex-1" onclick="showToast('Export PDF en cours...')">
+                                    <i class="fas fa-file-pdf"></i>
+                                    Export PDF
+                                </button>
+                                <button class="btn btn-success flex-1" onclick="showToast('Export Excel en cours...')">
+                                    <i class="fas fa-file-excel"></i>
+                                    Export Excel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                
+                <div class="bottom-nav">
+                    <button class="nav-item" onclick="showScreen('homeScreen')" id="nav-home">
+                        <i class="fas fa-home"></i>
+                        <span>Accueil</span>
+                    </button>
+                    <button class="nav-item" onclick="showScreen('documentsScreen')" id="nav-docs">
+                        <i class="fas fa-folder"></i>
+                        <span>Documents</span>
+                    </button>
+                    <button class="nav-item" onclick="showScreen('nonConformityScreen')" id="nav-nc">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>NC</span>
+                    </button>
+                    <button class="nav-item" onclick="showScreen('auditsScreen')" id="nav-audit">
+                        <i class="fas fa-clipboard-check"></i>
+                        <span>Audit</span>
+                    </button>
+                    <button class="nav-item" onclick="logout()" id="nav-logout">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Déconnexion</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast pour les notifications -->
+    <div id="toast" class="fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg transform translate-x-full transition-transform duration-300 z-50">
+        <span id="toastMessage"></span>
+    </div>
+
+    <script>
+        let currentUser = 'Admin';
+        let currentRole = 'admin';
+        let isOffline = false;
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', function() {
+            // Simuler le mode hors ligne aléatoirement
+            if (Math.random() < 0.3) {
+                toggleOfflineMode();
+            }
+        });
+
+        function login() {
+            const username = document.getElementById('username').value;
+            const role = document.getElementById('userRole').value;
+            
+            if (username && document.getElementById('password').value) {
+                currentUser = username;
+                currentRole = role;
+                document.getElementById('currentUser').textContent = currentUser;
+                showScreen('homeScreen');
+                showToast('Connexion réussie !');
+            } else {
+                showToast('Veuillez remplir tous les champs', 'error');
+            }
+        }
+
+        function logout() {
+            showScreen('loginScreen');
+            showToast('Déconnexion réussie');
+        }
+
+        function showScreen(screenId) {
+            // Masquer tous les écrans
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            
+            // Afficher l'écran demandé
+            document.getElementById(screenId).classList.add('active');
+            
+            // Mettre à jour la navigation
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            // Activer l'élément de navigation correspondant
+            const navMap = {
+                'homeScreen': 'nav-home',
+                'documentsScreen': 'nav-docs',
+                'nonConformityScreen': 'nav-nc',
+                'auditsScreen': 'nav-audit'
+            };
+            
+            if (navMap[screenId]) {
+                document.getElementById(navMap[screenId]).classList.add('active');
+            }
+            
+            // Initialiser les graphiques si nécessaire
+            if (screenId === 'kpiScreen') {
+                setTimeout(initCharts, 100);
+            }
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+            
+            toastMessage.textContent = message;
+            toast.className = `fixed top-4 right-4 px-4 py-2 rounded-lg shadow-lg transform transition-transform duration-300 z-50 ${
+                type === 'error' ? 'bg-red-500' : 'bg-green-500'
+            } text-white`;
+            
+            // Afficher le toast
+            toast.style.transform = 'translateX(0)';
+            
+            // Masquer après 3 secondes
+            setTimeout(() => {
+                toast.style.transform = 'translateX(100%)';
+            }, 3000);
+        }
+
+        function toggleFolder(element) {
+            const nextElement = element.nextElementSibling;
+            const chevron = element.querySelector('.fa-chevron-right');
+            
+            if (nextElement.style.display === 'none' || !nextElement.style.display) {
+                nextElement.style.display = 'block';
+                chevron.classList.remove('fa-chevron-right');
+                chevron.classList.add('fa-chevron-down');
+            } else {
+                nextElement.style.display = 'none';
+                chevron.classList.remove('fa-chevron-down');
+                chevron.classList.add('fa-chevron-right');
+            }
+        }
+
+        function showNCForm() {
+            document.getElementById('ncForm').style.display = 'block';
+            document.getElementById('ncList').style.display = 'none';
+        }
+
+        function showNCList() {
+            document.getElementById('ncForm').style.display = 'none';
+            document.getElementById('ncList').style.display = 'block';
+        }
+
+        function submitNC() {
+            showToast('Non-conformité enregistrée avec succès !');
+            showNCList();
+        }
+
+        function startAudit() {
+            showToast('Audit démarré - Checklist chargée');
+        }
+
+        function signSafetySheet() {
+            const signaturePad = document.getElementById('signaturePad');
+            const signBtn = document.getElementById('signBtn');
+            
+            signaturePad.classList.add('signed', 'signing');
+            signaturePad.innerHTML = '<i class="fas fa-check-circle text-green-500 text-3xl"></i><p class="text-green-600 font-semibold">Signé par ' + currentUser + '</p>';
+            
+            signBtn.innerHTML = '<i class="fas fa-check"></i> Signé le ' + new Date().toLocaleDateString();
+            signBtn.disabled = true;
+            signBtn.classList.remove('btn-success');
+            signBtn.classList.add('btn-secondary');
+            
+            setTimeout(() => {
+                signaturePad.classList.remove('signing');
+            }, 2000);
+            
+            showToast('Fiche de sécurité signée avec succès !');
+        }
+
+        function initCharts() {
+            const ctx = document.getElementById('ncChart');
+            if (!ctx) return;
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun'],
+                    datasets: [{
+                        label: 'Non-conformités ouvertes',
+                        data: [15, 12, 18, 8, 12, 6],
+                        borderColor: '#f44336',
+                        backgroundColor: 'rgba(244, 67, 54, 0.1)',
+                        tension: 0.4
+                    }, {
+                        label: 'Non-conformités fermées',
+                        data: [10, 15, 13, 20, 18, 22],
+                        borderColor: '#4CAF50',
+                        backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        function toggleOfflineMode() {
+            isOffline = !isOffline;
+            const banner = document.getElementById('offlineBanner');
+            banner.style.display = isOffline ? 'block' : 'none';
+        }
+
+    
+        document.addEventListener('DOMContentLoaded', function() {
+            showNCList();
+        });
+    </script>
+</body>
+</html>
